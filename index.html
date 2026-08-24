@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>대기관리기술사 스마트 아카이브</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#3b82f6', 600: '#2563eb' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .blind-blur { filter: blur(5px); transition: filter 0.2s ease; cursor: pointer; }
+    .blind-blur:hover { filter: blur(2px); }
+    .blind-blur.revealed { filter: none !important; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased select-none">
+
+  <!-- 1. 보안 로그인 화면 (8234) -->
+  <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-7 shadow-2xl backdrop-blur-xl">
+      <div class="text-center mb-6">
+        <div class="inline-flex p-3.5 bg-blue-600/10 text-blue-400 rounded-2xl mb-3 border border-blue-500/20">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+        <h1 class="text-xl font-bold text-white tracking-tight">대기관리기술사 서브노트</h1>
+        <p class="text-xs text-slate-400 mt-1">인증 핀번호(4자리)를 입력하세요</p>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <input type="password" id="pin-input" maxlength="8" placeholder="PIN 입력" 
+                 class="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-xl text-center text-xl tracking-widest text-white focus:outline-none focus:border-blue-500 transition">
+        </div>
+        <button type="button" id="login-btn" onclick="checkPin()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 cursor-pointer">
+          <span>접속하기</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <p id="login-err" class="text-rose-400 text-xs text-center mt-3 hidden">비밀번호가 일치하지 않습니다.</p>
+    </div>
+  </div>
+
+  <!-- 2. 메인 대시보드 화면 -->
+  <div id="main-app" class="hidden flex-1 flex flex-col md:flex-row h-screen overflow-hidden">
+    
+    <!-- 사이드바 -->
+    <aside class="w-full md:w-64 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 flex md:flex-col justify-between p-4 shrink-0">
+      <div>
+        <div class="flex items-center justify-between px-2 py-3 mb-4">
+          <div class="flex items-center gap-2.5">
+            <div class="p-2 bg-blue-600 rounded-xl text-white shadow-md shadow-blue-500/20">
+              <i data-lucide="wind" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-white leading-tight">대기관리기술사</h2>
+              <span class="text-[10px] text-blue-400 font-semibold tracking-wider">SMART ARCHIVE</span>
+            </div>
+          </div>
+        </div>
+
+        <nav class="flex md:flex-col gap-1.5 overflow-x-auto hide-scrollbar">
+          <button type="button" onclick="switchTab('tab-10p')" id="btn-tab-10p" class="tab-btn flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-blue-400 bg-blue-600/10 border border-blue-500/20">
+            <i data-lucide="file-text" class="w-4 h-4"></i>
+            <span class="whitespace-nowrap">10점 단답형 DB</span>
+          </button>
+          <button type="button" onclick="switchTab('tab-25p')" id="btn-tab-25p" class="tab-btn flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+            <i data-lucide="layers" class="w-4 h-4"></i>
+            <span class="whitespace-nowrap">25점 논술형 DB</span>
+          </button>
+          <button type="button" onclick="switchTab('tab-chat')" id="btn-tab-chat" class="tab-btn flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+            <span class="whitespace-nowrap">실전 문답 훈련</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="hidden md:flex flex-col gap-3 p-2 border-t border-slate-800 text-xs">
+        <div class="flex items-center justify-between text-slate-400">
+          <span>암기 완료율</span>
+          <span id="progress-percent" class="font-bold text-blue-400">0%</span>
+        </div>
+        <div class="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+          <div id="progress-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <div class="flex items-center justify-between pt-1 text-slate-500">
+          <span class="text-[11px]">PE Air Pollution</span>
+          <button type="button" onclick="logout()" class="hover:text-rose-400 transition flex items-center gap-1">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span>로그아웃</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-slate-950">
+      <header class="h-16 border-b border-slate-800 px-4 md:px-6 flex items-center justify-between shrink-0 bg-slate-900/40">
+        <div class="flex items-center gap-3">
+          <h2 id="tab-title" class="text-sm md:text-base font-bold text-white flex items-center gap-2">
+            <span>10점 단답형 DB</span>
+          </h2>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="relative hidden sm:block">
+            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="키워드 검색..." 
+                   class="pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500 w-40">
+          </div>
+          <button type="button" onclick="openModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-semibold rounded-lg transition">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">문항 추가</span>
+          </button>
+          <button type="button" onclick="toggleBlindMode()" id="blind-btn" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg border border-slate-700 transition">
+            <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+            <span>블라인드</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 10점형 탭 -->
+      <section id="tab-10p" class="tab-content flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div id="list-10p" class="space-y-4"></div>
+      </section>
+
+      <!-- 25점형 탭 -->
+      <section id="tab-25p" class="tab-content hidden flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div id="list-25p" class="space-y-4"></div>
+      </section>
+
+      <!-- AI 문답 훈련 탭 -->
+      <section id="tab-chat" class="tab-content hidden flex-1 flex flex-col overflow-hidden">
+        <div id="chat-box" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+          <div class="flex items-start gap-3 max-w-[90%] md:max-w-[75%]">
+            <div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 text-xs font-bold">AI</div>
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-none text-xs text-slate-200 leading-relaxed shadow-lg">
+              <span class="text-amber-400 font-bold block mb-1">⚡ 실전 인출 훈련</span>
+              <strong>Q. 원심력 집진장치(Cyclone)의 절단입경을 작게(집진 효율 향상) 하기 위한 설계 및 운전 조건 3가지를 핵심 키워드로 서술하세요.</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 border-t border-slate-800 bg-slate-900/80 shrink-0">
+          <div class="flex gap-2">
+            <input type="text" id="chat-input" placeholder="키워드 답안을 입력하세요..." 
+                   onkeydown="if(event.key==='Enter') sendChatAnswer()"
+                   class="flex-1 px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500">
+            <button type="button" onclick="sendChatAnswer()" class="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold shrink-0 transition flex items-center gap-1.5">
+              <span>제출</span>
+              <i data-lucide="send" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 문항 추가 모달 -->
+  <div id="item-modal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-4 h-4 text-blue-400"></i>
+          <span>새 서브노트 문항 등록</span>
+        </h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">구분</label>
+          <select id="modal-type" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white">
+            <option value="10p">10점 단답형</option>
+            <option value="25p">25점 논술형</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">분야/카테고리</label>
+          <input type="text" id="modal-category" placeholder="예: 대기오염방지공학" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">문제 제목</label>
+          <input type="text" id="modal-title" placeholder="문제명을 입력하세요" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">개조식 서론</label>
+          <textarea id="modal-intro" rows="2" placeholder="개조식 서론 요약" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white"></textarea>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">핵심 본론 (*키워드는 [ ] 로 감싸면 블라인드 처리)</label>
+          <textarea id="modal-body" rows="4" placeholder="예: 1. 주 반응식: [4NO + 4NH3 + O2 -> 4N2 + 6H2O]" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg">취소</button>
+          <button type="button" onclick="saveNewItem()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var defaultData = [
+      {
+        id: '10-1',
+        type: '10p',
+        category: '대기오염방지공학',
+        title: '선택적 촉매환원(SCR)의 반응 메커니즘 및 피독 요인',
+        intro: '배가스 중 NOx를 환원제(NH3)와 촉매층을 통과시켜 무해한 N2와 H2O로 선택적 환원하는 고효율 탈질 공정(운전온도: 300~400°C).',
+        body: '1. 주 반응식: [4NO + 4NH3 + O2 -> 4N2 + 6H2O]\n2. 촉매 피독 요인: [SO3에 의한 ABS(산성황산암모늄) 석출] 및 [알칼리금속(K, Na)에 의한 활성점 피독].',
+        memorized: false
+      },
+      {
+        id: '10-2',
+        type: '10p',
+        category: '대기확산모델링',
+        title: '가우시안 플룸(Gaussian Plume) 모델의 기본 가정 5가지',
+        intro: '정상상태의 점오염원에서 배출된 오염물질의 대기 중 확산 농도를 정규분포 곡선으로 예측하는 대표적 해석 모델.',
+        body: '1. 연속 점오염원에서의 [정상상태(Steady-state)] 배출\n2. 풍향/풍속은 시공간적으로 일정 ([균일풍속 u])\n3. 오염물질은 이동 중 [화학반응, 침적, 소멸이 없는 보존성 물질]\n4. 수평(y), 수직(z) 방향 농도 분포는 [정규분포(Gaussian)]\n5. 지표면에서의 [전반사(Total reflection)] 가정',
+        memorized: true
+      },
+      {
+        id: '25-1',
+        type: '25p',
+        category: '탈질공정 비교',
+        title: '질소산화물(NOx) 저감을 위한 SCR과 SNCR의 비교 및 ABS 생성 제어 방안',
+        intro: '연소공정 후단 탈질 기술은 촉매 사용 여부에 따라 SCR과 SNCR로 구분되며 최적 공정 선정이 요구됨.',
+        body: '■ 핵심 비교 분석:\n- 반응온도: SCR [300~400℃] vs SNCR [850~1050℃]\n- 탈질효율: SCR [80~90% 이상] vs SNCR [40~60%]\n- 촉매유무: SCR [V2O5/TiO2 사용] vs SNCR [촉매 미사용]\n\n■ ABS 생성 제어 방안:\n- 반응온도를 [ABS 형성 온도(260~280℃) 이상으로 철저 유지]\n- 암모니아 슬립을 [2~5 ppm 이하]로 엄격 제어.',
+        memorized: false
+      }
+    ];
+
+    var currentDB = JSON.parse(localStorage.getItem('pe_air_notes')) || defaultData;
+    var isBlind = false;
+
+    // PIN 비밀번호 체크 함수
+    function checkPin() {
+      var pin = document.getElementById('pin-input').value.replace(/\s+/g, '');
+      if (pin === '8234') {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('login-err').classList.add('hidden');
+        renderItems();
+        updateProgress();
+      } else {
+        document.getElementById('login-err').classList.remove('hidden');
+      }
+    }
+
+    // 엔터키 입력 지원
+    document.getElementById('pin-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        checkPin();
+      }
+    });
+
+    function logout() {
+      document.getElementById('pin-input').value = '';
+      document.getElementById('login-err').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('main-app').classList.add('hidden');
+    }
+
+    function saveDB() {
+      localStorage.setItem('pe_air_notes', JSON.stringify(currentDB));
+      renderItems();
+      updateProgress();
+    }
+
+    function parseBlindText(text) {
+      if (!text) return '';
+      return text.replace(/\[(.*?)\]/g, function(match, p1) {
+        return '<span class="blind-target font-semibold text-amber-300 underline decoration-amber-500/40 ' + (isBlind ? 'blind-blur' : '') + '" onclick="revealWord(this)">' + p1 + '</span>';
+      }).replace(/\n/g, '<br>');
+    }
+
+    function revealWord(el) {
+      if (isBlind) {
+        el.classList.toggle('revealed');
+      }
+    }
+
+    function toggleBlindMode() {
+      isBlind = !isBlind;
+      var targets = document.querySelectorAll('.blind-target');
+      targets.forEach(function(el) {
+        if (isBlind) {
+          el.classList.add('blind-blur');
+          el.classList.remove('revealed');
+        } else {
+          el.classList.remove('blind-blur', 'revealed');
+        }
+      });
+      var btn = document.getElementById('blind-btn');
+      btn.classList.toggle('bg-blue-600', isBlind);
+      btn.classList.toggle('border-blue-500', isBlind);
+    }
+
+    function toggleMemorized(id) {
+      var item = currentDB.find(function(x) { return x.id === id; });
+      if (item) {
+        item.memorized = !item.memorized;
+        saveDB();
+      }
+    }
+
+    function deleteItem(id) {
+      if (confirm('이 문항을 삭제하시겠습니까?')) {
+        currentDB = currentDB.filter(function(x) { return x.id !== id; });
+        saveDB();
+      }
+    }
+
+    function renderItems(filterQuery) {
+      var query = (filterQuery || '').toLowerCase();
+      var list10 = document.getElementById('list-10p');
+      var list25 = document.getElementById('list-25p');
+      list10.innerHTML = '';
+      list25.innerHTML = '';
+
+      var filtered = currentDB.filter(function(item) {
+        return (item.title && item.title.toLowerCase().indexOf(query) !== -1) || 
+               (item.category && item.category.toLowerCase().indexOf(query) !== -1) || 
+               (item.body && item.body.toLowerCase().indexOf(query) !== -1);
+      });
+
+      filtered.forEach(function(item) {
+        var card = document.createElement('article');
+        card.className = 'bg-slate-900 border ' + (item.memorized ? 'border-emerald-500/40 bg-slate-900/60' : 'border-slate-800') + ' rounded-2xl p-5 hover:border-slate-700 transition relative group';
+        
+        card.innerHTML = 
+          '<div class="flex items-center justify-between mb-3">' +
+            '<div class="flex items-center gap-2">' +
+              '<span class="px-2.5 py-1 bg-blue-500/10 text-blue-400 text-[11px] font-bold rounded-lg border border-blue-500/20">' + item.category + '</span>' +
+              (item.memorized ? '<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">암기완료</span>' : '') +
+            '</div>' +
+            '<div class="flex items-center gap-2">' +
+              '<button type="button" onclick="toggleMemorized(\'' + item.id + '\')" class="p-1.5 rounded-lg ' + (item.memorized ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-500 hover:text-slate-300') + ' transition">' +
+                '<i data-lucide="' + (item.memorized ? 'check-circle-2' : 'circle') + '" class="w-4 h-4"></i>' +
+              '</button>' +
+              '<button type="button" onclick="deleteItem(\'' + item.id + '\')" class="p-1.5 text-slate-600 hover:text-rose-400 transition">' +
+                '<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<h3 class="text-sm md:text-base font-bold text-white mb-2 leading-snug">' + item.title + '</h3>' +
+          '<div class="text-xs space-y-2.5 text-slate-300 leading-relaxed font-mono">' +
+            (item.intro ? 
+              '<div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80">' +
+                '<p class="text-slate-400 font-semibold mb-1 text-[11px]">[개조식 서론]</p>' +
+                '<p class="text-slate-300">' + parseBlindText(item.intro) + '</p>' +
+              '</div>' : '') +
+            '<div class="p-3 bg-slate-950/40 rounded-xl border border-slate-800/40 space-y-1">' +
+              '<p class="text-slate-400 font-semibold mb-1 text-[11px]">[핵심 본론 및 차별화 결론]</p>' +
+              '<p class="text-slate-200 leading-relaxed">' + parseBlindText(item.body) + '</p>' +
+            '</div>' +
+          '</div>';
+
+        if (item.type === '10p') {
+          list10.appendChild(card);
+        } else {
+          list25.appendChild(card);
+        }
+      });
+
+      lucide.createIcons();
+    }
+
+    function handleSearch(val) { renderItems(val); }
+
+    function updateProgress() {
+      if (currentDB.length === 0) return;
+      var count = currentDB.filter(function(x) { return x.memorized; }).length;
+      var pct = Math.round((count / currentDB.length) * 100);
+      document.getElementById('progress-percent').innerText = pct + '%';
+      document.getElementById('progress-bar').style.width = pct + '%';
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.add('hidden'); });
+      document.querySelectorAll('.tab-btn').forEach(function(el) {
+        el.classList.remove('text-blue-400', 'bg-blue-600/10', 'border', 'border-blue-500/20');
+        el.classList.add('text-slate-400');
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      var activeBtn = document.getElementById('btn-' + tabId);
+      activeBtn.classList.add('text-blue-400', 'bg-blue-600/10', 'border', 'border-blue-500/20');
+      activeBtn.classList.remove('text-slate-400');
+
+      var titleMap = {
+        'tab-10p': '10점 단답형 DB',
+        'tab-25p': '25점 논술형 DB',
+        'tab-chat': '실전 문답 훈련'
+      };
+      document.getElementById('tab-title').innerText = titleMap[tabId];
+    }
+
+    function openModal() { document.getElementById('item-modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('item-modal').classList.add('hidden'); }
+
+    function saveNewItem() {
+      var title = document.getElementById('modal-title').value.trim();
+      if (!title) { alert('제목을 입력하세요'); return; }
+
+      var newItem = {
+        id: 'user-' + Date.now(),
+        type: document.getElementById('modal-type').value,
+        category: document.getElementById('modal-category').value.trim() || '기타',
+        title: title,
+        intro: document.getElementById('modal-intro').value.trim(),
+        body: document.getElementById('modal-body').value.trim(),
+        memorized: false
+      };
+      currentDB.unshift(newItem);
+      saveDB();
+      closeModal();
+      document.getElementById('modal-title').value = '';
+      document.getElementById('modal-intro').value = '';
+      document.getElementById('modal-body').value = '';
+    }
+
+    function sendChatAnswer() {
+      var input = document.getElementById('chat-input');
+      var val = input.value.trim();
+      if (!val) return;
+
+      var chatBox = document.getElementById('chat-box');
+      chatBox.innerHTML += 
+        '<div class="flex items-start justify-end gap-2.5">' +
+          '<div class="bg-blue-600 text-white p-3.5 rounded-2xl rounded-tr-none text-xs max-w-[85%] leading-relaxed shadow-md">' +
+            val +
+          '</div>' +
+        '</div>';
+      input.value = '';
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      setTimeout(function() {
+        chatBox.innerHTML += 
+          '<div class="flex items-start gap-3 max-w-[90%] md:max-w-[80%]">' +
+            '<div class="w-8 h-8 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 text-xs font-bold">AI</div>' +
+            '<div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl rounded-tl-none text-xs text-slate-200 leading-relaxed shadow-lg">' +
+              '💡 <strong class="text-blue-400">채점 및 키워드 피드백:</strong><br><br>' +
+              '절단입경 공식에 근거한 3가지 핵심 요건:<br>' +
+              '1. <strong>유입폭(W) 축소:</strong> 원심력 작용 반경 최소화<br>' +
+              '2. <strong>유입가스 속도 증가:</strong> 원심가속도 증대<br>' +
+              '3. <strong>유효 회전수(N) 증가:</strong> 원통부 길이 확보를 통한 체류시간 증대<br><br>' +
+              '<span class="text-emerald-400 font-semibold">✔ 완벽한 핵심 키워드 인출입니다!</span>' +
+            '</div>' +
+          '</div>';
+        chatBox.scrollTop = chatBox.scrollHeight;
+        lucide.createIcons();
+      }, 500);
+    }
+
+    lucide.createIcons();
+  </script>
+</body>
+</html>
