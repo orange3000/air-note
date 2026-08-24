@@ -662,28 +662,39 @@
     var isBlind = false;
     var activeCategory = 'ALL';
 
+    // 1. 자동 로그인 체크 및 PIN 인증
     function checkPin() {
       var pin = document.getElementById('pin-input').value.replace(/\s+/g, '');
       if (pin === '8234') {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('main-app').classList.remove('hidden');
-        document.getElementById('login-err').classList.add('hidden');
-        initApp();
+        localStorage.setItem('pe_air_auth', 'true'); // 로그인 세션 유지 저장
+        unlockDashboard();
       } else {
         document.getElementById('login-err').classList.remove('hidden');
       }
     }
 
-    document.getElementById('pin-input').addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') checkPin();
-    });
+    function unlockDashboard() {
+      document.getElementById('login-screen').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('hidden');
+      document.getElementById('login-err').classList.add('hidden');
+      initApp();
+    }
 
     function logout() {
+      localStorage.removeItem('pe_air_auth'); // 세션 삭제
       document.getElementById('pin-input').value = '';
       document.getElementById('login-err').classList.add('hidden');
       document.getElementById('login-screen').classList.remove('hidden');
       document.getElementById('main-app').classList.add('hidden');
     }
+
+    // 2. 페이지 로드 시 자동 진입 로직 (코드 맨 하단에 추가/수정)
+    document.addEventListener('DOMContentLoaded', function() {
+      if (localStorage.getItem('pe_air_auth') === 'true') {
+        unlockDashboard();
+      }
+      if (window.lucide) lucide.createIcons();
+    });
 
     function initApp() {
       renderBadges();
