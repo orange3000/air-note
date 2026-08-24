@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>대기관리기술사 마스터 서브노트</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#3b82f6', 600: '#2563eb' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .blind-blur { filter: blur(5.5px); transition: filter 0.2s ease; cursor: pointer; user-select: none; }
+    .blind-blur:hover { filter: blur(2px); }
+    .blind-blur.revealed { filter: none !important; user-select: text; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased">
+
+  <!-- 1. 보안 인증 화면 -->
+  <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
+    <div class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-7 shadow-2xl backdrop-blur-xl">
+      <div class="text-center mb-6">
+        <div class="inline-flex p-3.5 bg-blue-600/10 text-blue-400 rounded-2xl mb-3 border border-blue-500/20">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+        <h1 class="text-xl font-bold text-white tracking-tight">대기관리기술사 마스터</h1>
+        <p class="text-xs text-slate-400 mt-1">인증 핀번호(4자리)를 입력하세요</p>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <input type="password" id="pin-input" maxlength="8" placeholder="PIN 번호 입력" 
+                 class="w-full px-4 py-3.5 bg-slate-950 border border-slate-800 rounded-xl text-center text-xl tracking-widest text-white focus:outline-none focus:border-blue-500 transition">
+        </div>
+        <button type="button" onclick="checkPin()" class="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 cursor-pointer">
+          <span>대시보드 접속</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <p id="login-err" class="text-rose-400 text-xs text-center mt-3 hidden">비밀번호가 일치하지 않습니다.</p>
+    </div>
+  </div>
+
+  <!-- 2. 메인 대시보드 화면 -->
+  <div id="main-app" class="hidden flex-1 flex flex-col md:flex-row h-screen overflow-hidden">
+    
+    <!-- 좌측 사이드바 -->
+    <aside class="w-full md:w-72 bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 flex md:flex-col justify-between p-4 shrink-0 shadow-xl">
+      <div class="space-y-4 overflow-y-auto hide-scrollbar">
+        <div class="flex items-center justify-between px-1 py-2">
+          <div class="flex items-center gap-2.5">
+            <div class="p-2.5 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-500/20">
+              <i data-lucide="award" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h2 class="text-sm font-bold text-white tracking-tight leading-tight">대기관리기술사</h2>
+              <span class="text-[10px] text-blue-400 font-semibold tracking-wider">ALL-IN-ONE MASTER DB</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 네비게이션 -->
+        <nav class="flex md:flex-col gap-1.5 overflow-x-auto hide-scrollbar">
+          <button type="button" onclick="switchTab('tab-10p')" id="btn-tab-10p" class="tab-btn flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-blue-400 bg-blue-600/10 border border-blue-500/20">
+            <span class="flex items-center gap-2.5">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              <span class="whitespace-nowrap">10점 단답형 DB</span>
+            </span>
+            <span id="badge-10p" class="px-1.5 py-0.5 bg-blue-500/20 text-[10px] rounded-md text-blue-300">0</span>
+          </button>
+          <button type="button" onclick="switchTab('tab-25p')" id="btn-tab-25p" class="tab-btn flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+            <span class="flex items-center gap-2.5">
+              <i data-lucide="layers" class="w-4 h-4"></i>
+              <span class="whitespace-nowrap">25점 논술형 DB</span>
+            </span>
+            <span id="badge-25p" class="px-1.5 py-0.5 bg-slate-800 text-[10px] rounded-md text-slate-400">0</span>
+          </button>
+          <button type="button" onclick="switchTab('tab-practice')" id="btn-tab-practice" class="tab-btn flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+            <span class="flex items-center gap-2.5">
+              <i data-lucide="pen-tool" class="w-4 h-4 text-amber-400"></i>
+              <span class="whitespace-nowrap">실전 인출 훈련</span>
+            </span>
+            <span class="px-1.5 py-0.5 bg-amber-500/20 text-[10px] rounded-md text-amber-400 font-bold">LIVE</span>
+          </button>
+        </nav>
+
+        <!-- 15대 대분류 필터 -->
+        <div class="hidden md:block pt-2">
+          <label class="block text-[11px] font-bold text-slate-400 mb-1.5 px-1">15대 표준 분야 필터</label>
+          <select id="category-filter" onchange="handleCategoryFilter(this.value)" class="w-full bg-slate-950 border border-slate-800 text-slate-200 text-xs rounded-xl p-2.5 focus:outline-none focus:border-blue-500">
+            <option value="ALL">전체 분야 보기 (15대 분야)</option>
+            <option value="1. 대기오염개론">1. 대기오염개론</option>
+            <option value="2. 연소공학">2. 연소공학</option>
+            <option value="3. 기후변화">3. 기후변화</option>
+            <option value="4. 지구환경문제">4. 지구환경문제</option>
+            <option value="5. 미기상학">5. 미기상학</option>
+            <option value="6. 자동차의 오염">6. 자동차의 오염</option>
+            <option value="7. 실내공기질 오염">7. 실내공기질 오염</option>
+            <option value="8. 다이옥신 및 POPs">8. 다이옥신 및 POPs</option>
+            <option value="9. 악취">9. 악취</option>
+            <option value="10. VOCs 관리">10. VOCs 관리</option>
+            <option value="11. 산업환기">11. 산업환기</option>
+            <option value="12. 입자상물질과 처리">12. 입자상물질과 처리기술</option>
+            <option value="13. 유해가스와 처리">13. 유해가스와 처리기술</option>
+            <option value="14. 공정시험기준">14. 공정시험기준</option>
+            <option value="15. 대기환경관계법규">15. 대기환경관계법규</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 암기 현황 통계 -->
+      <div class="hidden md:flex flex-col gap-3 p-3 bg-slate-950/70 rounded-2xl border border-slate-800/80 text-xs mt-3">
+        <div class="flex items-center justify-between text-slate-400 font-medium">
+          <span>합격 암기 진도율</span>
+          <span id="progress-percent" class="font-bold text-blue-400 text-sm">0%</span>
+        </div>
+        <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+          <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+        </div>
+        <div class="flex items-center justify-between pt-1 text-slate-500 text-[11px]">
+          <span id="memo-count">0 / 0 문항 완료</span>
+          <button type="button" onclick="logout()" class="hover:text-rose-400 transition flex items-center gap-1">
+            <i data-lucide="log-out" class="w-3 h-3"></i>
+            <span>로그아웃</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="flex-1 flex flex-col overflow-hidden bg-slate-950">
+      
+      <!-- 상단 툴바 -->
+      <header class="h-16 border-b border-slate-800 px-4 md:px-6 flex items-center justify-between shrink-0 bg-slate-900/40 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+          <h2 id="tab-title" class="text-sm md:text-base font-bold text-white flex items-center gap-2">
+            <span>10점 단답형 DB</span>
+          </h2>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 통합 검색 -->
+          <div class="relative hidden sm:block">
+            <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="핵심 키워드/이론/법규 검색..." 
+                   class="pl-8 pr-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs text-white focus:outline-none focus:border-blue-500 w-44 transition">
+          </div>
+
+          <!-- 새 문항 추가 모달 버튼 -->
+          <button type="button" onclick="openModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-xs font-semibold rounded-lg transition">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">문항 추가</span>
+          </button>
+
+          <!-- 블라인드 암기 모드 -->
+          <button type="button" onclick="toggleBlindMode()" id="blind-btn" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-semibold rounded-lg border border-slate-700 transition">
+            <i data-lucide="eye-off" class="w-3.5 h-3.5"></i>
+            <span>블라인드</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- 모바일 필터 & 검색바 -->
+      <div class="md:hidden p-2.5 border-b border-slate-800 bg-slate-900/50 flex gap-2">
+        <select onchange="handleCategoryFilter(this.value)" class="flex-1 bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-lg p-1.5">
+          <option value="ALL">전체 분야 보기</option>
+          <option value="1. 대기오염개론">1. 대기오염개론</option>
+          <option value="2. 연소공학">2. 연소공학</option>
+          <option value="3. 기후변화">3. 기후변화</option>
+          <option value="4. 지구환경문제">4. 지구환경문제</option>
+          <option value="5. 미기상학">5. 미기상학</option>
+          <option value="6. 자동차의 오염">6. 자동차의 오염</option>
+          <option value="7. 실내공기질 오염">7. 실내공기질 오염</option>
+          <option value="8. 다이옥신 및 POPs">8. 다이옥신 및 POPs</option>
+          <option value="9. 악취">9. 악취</option>
+          <option value="10. VOCs 관리">10. VOCs 관리</option>
+          <option value="11. 산업환기">11. 산업환기</option>
+          <option value="12. 입자상물질과 처리">12. 입자상물질과 처리</option>
+          <option value="13. 유해가스와 처리">13. 유해가스와 처리</option>
+          <option value="14. 공정시험기준">14. 공정시험기준</option>
+          <option value="15. 대기환경관계법규">15. 대기환경관계법규</option>
+        </select>
+        <input type="text" oninput="handleSearch(this.value)" placeholder="검색..." 
+               class="w-28 px-2 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white">
+      </div>
+
+      <!-- 10점형 단답 서브노트 -->
+      <section id="tab-10p" class="tab-content flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div id="list-10p" class="space-y-4"></div>
+      </section>
+
+      <!-- 25점형 논술 DB -->
+      <section id="tab-25p" class="tab-content hidden flex-1 overflow-y-auto p-4 md:p-6 space-y-4">
+        <div id="list-25p" class="space-y-4"></div>
+      </section>
+
+      <!-- 실전 답안 인출 훈련 탭 -->
+      <section id="tab-practice" class="tab-content hidden flex-1 overflow-y-auto p-4 md:p-6 flex flex-col">
+        <div class="max-w-4xl w-full mx-auto space-y-4 flex-1 flex flex-col">
+          
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-center justify-between">
+            <div>
+              <span class="text-[11px] font-bold text-amber-400 block mb-1">⚡ 실전 답안 인출 트레이닝 (실전 답안지 규격)</span>
+              <h3 id="train-q-title" class="text-sm md:text-base font-bold text-white">문제를 선택하여 실전 답안 인출을 시작하세요.</h3>
+            </div>
+            <button type="button" onclick="loadRandomQuestion()" class="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0">
+              <i data-lucide="shuffle" class="w-3.5 h-3.5"></i>
+              <span>랜덤 출제</span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1">
+            <!-- 답안 작성 창 -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5 text-blue-400"></i> 내 실전 답안 (개조식/단답식 작성)
+                </span>
+                <span class="text-[10px] text-slate-500">실전 답안지 양식</span>
+              </div>
+              <textarea id="user-practice-input" placeholder="1. 개조식 정의&#10;2. 핵심 반응식/원리&#10;3. 공학적 대책 및 시사 결론" 
+                        class="w-full flex-1 min-h-[260px] bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-blue-500 leading-relaxed"></textarea>
+              <div class="mt-3 flex justify-end">
+                <button type="button" onclick="compareAnswer()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                  <span>모범답안 대조 & 키워드 채점</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 모범답안 비교 창 -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <i data-lucide="book-open" class="w-3.5 h-3.5 text-amber-400"></i> 표준 모범 답안
+                </span>
+                <span id="train-q-type" class="px-2 py-0.5 bg-slate-800 text-[10px] text-blue-400 rounded">대기분야</span>
+              </div>
+              <div id="model-answer-box" class="w-full flex-1 min-h-[260px] bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-400 font-mono overflow-y-auto leading-relaxed">
+                좌측에서 답안을 작성한 후 [모범답안 대조] 버튼을 누르면 적중률과 핵심 키워드가 표시됩니다.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- 문항 추가 모달 -->
+  <div id="item-modal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="plus-circle" class="w-4 h-4 text-blue-400"></i>
+          <span>새 서브노트 문항 등록</span>
+        </h3>
+        <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-slate-400 mb-1">유형</label>
+            <select id="modal-type" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white">
+              <option value="10p">10점 단답형</option>
+              <option value="25p">25점 논술형</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">15대 대분류</label>
+            <select id="modal-category" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white">
+              <option value="1. 대기오염개론">1. 대기오염개론</option>
+              <option value="2. 연소공학">2. 연소공학</option>
+              <option value="3. 기후변화">3. 기후변화</option>
+              <option value="4. 지구환경문제">4. 지구환경문제</option>
+              <option value="5. 미기상학">5. 미기상학</option>
+              <option value="6. 자동차의 오염">6. 자동차의 오염</option>
+              <option value="7. 실내공기질 오염">7. 실내공기질 오염</option>
+              <option value="8. 다이옥신 및 POPs">8. 다이옥신 및 POPs</option>
+              <option value="9. 악취">9. 악취</option>
+              <option value="10. VOCs 관리">10. VOCs 관리</option>
+              <option value="11. 산업환기">11. 산업환기</option>
+              <option value="12. 입자상물질과 처리">12. 입자상물질과 처리</option>
+              <option value="13. 유해가스와 처리">13. 유해가스와 처리</option>
+              <option value="14. 공정시험기준">14. 공정시험기준</option>
+              <option value="15. 대기환경관계법규">15. 대기환경관계법규</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">문제 제목</label>
+          <input type="text" id="modal-title" placeholder="문제명을 입력하세요" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white">
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">개조식 서론 정의</label>
+          <textarea id="modal-intro" rows="2" placeholder="개조식 서론 요약" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white"></textarea>
+        </div>
+        <div>
+          <label class="block text-slate-400 mb-1">핵심 본론 (*키워드는 [ ] 로 감싸면 블라인드 처리, 표는 | 구문 지원)</label>
+          <textarea id="modal-body" rows="4" placeholder="예: 1. 주 반응식: [4NO + 4NH3 + O2 -> 4N2 + 6H2O]" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white"></textarea>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg">취소</button>
+          <button type="button" onclick="saveNewItem()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var masterExamDB = [
+      {
+        id: 'c1-01',
+        type: '10p',
+        category: '1. 대기오염개론',
+        title: '대기환경기준 항목 중 광화학 관련 물질(O3, NO2)의 기준치 및 최근 농도 추이',
+        intro: '태양 복사에너지에 의한 광화학 2차 반응 생성물인 O3 및 전구물질 NO2의 환경기준과 최근 대기질 변화 경향.',
+        body: '1. [환경기준치]:\n  - 오존(O₃): [1시간 평균 0.1 ppm 이하], [8시간 평균 0.06 ppm 이하]\n  - NO₂: [1시간 평균 0.10 ppm], [24시간 0.06 ppm], [연간 0.03 ppm]\n2. [최근 농도 추이]:\n  - NO₂: 자동차 저공해화 및 배출규제로 [전국적 완만한 감소 추세].\n  - O₃: 기온 상승, 일사량 증가, VOCs/NOx 비율 변화로 인해 [고농도 발생 빈도 및 연평균 농도 지속 상승].',
+        memorized: false
+      },
+      {
+        id: 'c1-02',
+        type: '25p',
+        category: '1. 대기오염개론',
+        title: '통합대기환경지수(CAI) 산정 체계, 지수 구간별 특성 및 실시간 지수 개선방안',
+        intro: '대기오염도에 따른 인체 위해도를 알기 쉽게 단일 수치화(0~500)한 종합 지표 체계와 현행 지수 산정의 한계점 고찰.',
+        body: '■ [CAI 대상 6대 오염물질]:\n- 대상 항목: [SO₂, NO₂, CO, O₃, PM₁₀, PM₂.₅]\n\n■ [CAI 4개 등급 체계 및 지수 구간 (표)]:\n| 지수 구간 | 등급 범주 | 상징 색상 | 대기질 영향 및 인체 위해성 |\n| :--- | :--- | :--- | :--- |\n| [0 ~ 50] | 좋음 (Good) | 파랑 (Blue) | 대기오염 관련 영향이 유발되지 않는 청정 상태 |\n| [51 ~ 100] | 보통 (Moderate) | 초록 (Green) | 만성 민감군에게 경미한 영향 유발 가능 |\n| [101 ~ 250] | 나쁨 (Unhealthy) | 노랑 (Yellow) | 민감군에 유해, 일반인 건강상 불쾌감 유발 |\n| [251 ~ 500] | 매우나쁨 (Very Unhealthy) | 빨강 (Red) | 전 국민에게 심각한 호흡기/심혈관 영향 유발 |\n\n■ [산정 방식 및 개선방안]:\n1. [단일 최댓값 편향]: 6개 항목 중 [가장 높은 개별지수를 최종 CAI로 결정]하므로 다중 물질 [복합 상승작용(Synergy) 미반영].\n2. [개선 대책]: 단시간 피크 노출을 반영하는 실시간 가중치 모델 및 복합 위해도 지수 도입 필요.',
+        memorized: false
+      },
+      {
+        id: 'c2-01',
+        type: '10p',
+        category: '2. 연소공학',
+        title: 'Zeldovich Thermal NOx 생성 메커니즘 3대 반응식 및 억제 대책',
+        intro: '1,300℃ 이상 고온 연소 시 공기 중 질소(N2)와 산소(O2)가 열적으로 해리되어 반응하는 질소산화물 생성 기전.',
+        body: '1. [Zeldovich 연쇄반응 3대 반응식]:\n  - 반응 1: [O + N₂ ⇄ NO + N] (율속단계, 거대 활성화에너지 필요)\n  - 반응 2: [N + O₂ ⇄ NO + O]\n  - 반응 3: [N + OH ⇄ NO + H]\n2. [생성 억제 공학적 3대 조건]:\n  - [연소 온도 저하]: 2단 연소, 배가스 재순환(FGR), 희박 예혼합 버너 적용.\n  - [산소 농도 저하]: 저공기비 연소(Low Excess Air) 구현.\n  - [고온 체류시간 단축]: 화염 구역 통과 속도 증가.',
+        memorized: false
+      },
+      {
+        id: 'c2-02',
+        type: '10p',
+        category: '2. 연소공학',
+        title: '보일러 저온부식(Cold End Corrosion) 메커니즘 및 방지대책',
+        intro: '연소 배가스 중 SO3가 수증기와 결합해 생성된 황산(H2SO4) 증기가 노점 이하 금속면에 응축되어 부식을 일으키는 현상.',
+        body: '1. [발생 메커니즘]:\n  - [SO₃ + H₂O → H₂SO₄(황산 생성)], 황산 노점([약 120~150℃]) 이하에서 응축 침적.\n2. [방지대책]:\n  - [저공기비 연소]: 잉여 산소를 줄여 SO₂의 SO₃ 전환 억제.\n  - [노점 이상 유지]: 증기식 공기예열기로 인입 가스 온도 유지.\n  - [첨가제 주입]: Mg(OH)₂, 돌로마이트 주입으로 황산 중화.',
+        memorized: false
+      },
+      {
+        id: 'c3-01',
+        type: '25p',
+        category: '3. 기후변화',
+        title: '온실가스 배출 범위(Scope 1, 2, 3) 및 EU 탄소국경조정제도(CBAM) 대응 전략',
+        intro: 'GHG Protocol에 따른 기업 배출원 경계 구분과 EU-CBAM 무역 관세화 조치에 따른 공학적·정책적 감축 대응 방안.',
+        body: '■ [온실가스 Scope 1, 2, 3 분류 비교 (표)]:\n| 구분 | 정의 | 주요 발생원 | 관리 및 규제 특성 |\n| :--- | :--- | :--- | :--- |\n| [Scope 1 (직접 배출)] | 소유·통제 배출원 | 고정연소(보일러), 공정배출, 이동연소(차량) | 배출권거래제(K-ETS) 의무 대상 |\n| [Scope 2 (간접 배출)] | 외부 도입 에너지 | 외부 수전 전력, 열, 스팀 사용 | 국내법상 의무 보고 항목 |\n| [Scope 3 (기타 간접)] | 가치사슬 전과정 | 원료 채굴, 제품 유통, 사용 및 폐기 | CBAM 및 ESG 공급망 공시 의무화 |\n\n■ [EU CBAM(탄소국경조정제도) 핵심 내용]:\n- 목적: [탄소 누출(Carbon Leakage) 방지] 및 역내 기업 보호.\n- 6대 대상 품목: [철강, 알루미늄, 시멘트, 비료, 수소, 전력].\n- 메커니즘: 제품 [내재 탄소 배출량(Embedded Emissions)]에 상응하는 CBAM 인증서 구매 의무화.\n\n■ [국내 산업 대응방안]:\n- 제품 단위 전과정평가(LCA) 기반 MRV(산정·보고·검증) 디지털 시스템 구축 및 저탄소 전기로/수소환원제철 전환.',
+        memorized: false
+      },
+      {
+        id: 'c3-02',
+        type: '25p',
+        category: '3. 기후변화',
+        title: '교토의정서와 파리협정(Paris Agreement)의 신기후체제 비교 및 제6조 탄소시장 메커니즘',
+        intro: '하향식 교토 체제에서 전 지구적 자발적 감축(상향식) 파리협정 체제로의 전환과 국제 탄소시장 메커니즘 고찰.',
+        body: '■ [교토의정서 vs 파리협정 핵심 비교 (표)]:\n| 항목 | 교토의정서 (1997) | 파리협정 (2015, 신기후체제) |\n| :--- | :--- | :--- |\n| [목표 온도] | 명시적 온도 목표 부재 | [산업화 이전 대비 2℃ 이하, 1.5℃ 제한 노력] |\n| [참여 국가] | 부속서 I (선진국 38개국) 의무 | [선진국 + 개도국 195개국 전체 참여] |\n| [감축 방식] | 하향식(Top-Down) 강제 할당 | [상향식(Bottom-Up) 국가자발적기여(NDC)] |\n| [시장 메커니즘] | CDM, JI, 배출권거래(ET) | [제6조 메커니즘 (6.2조 ITMO, 6.4조 시장)] |\n\n■ [파리협정 제6조 핵심 요건]:\n- 국외 감축 실적 이전 시 [상응조정(Corresponding Adjustment)]을 적용하여 온실가스 감축량의 [이중계상(Double Counting) 원천 방지].',
+        memorized: false
+      },
+      {
+        id: 'c4-01',
+        type: '25p',
+        category: '4. 지구환경문제',
+        title: '오존 등농도 곡선(EKMA, Ozone Isopleth)의 영역별 특성 및 맞춤형 스모그 저감 정책',
+        intro: 'VOCs와 NOx의 초기 농도비에 따른 지표 오존 생성 민감도를 규명하여 최적의 대기오염 삭감 정책을 수립하는 도식 모델.',
+        body: '■ [EKMA 2대 영역 특성 비교 (표)]:\n| 구분 | VOCs-Limited 영역 (도심형) | NOx-Limited 영역 (교외형) |\n| :--- | :--- | :--- |\n| [VOCs/NOx 비] | [비율 낮음 (< 8)] (고농도 NOx 환경) | [비율 높음 (> 15)] (청정·산림 환경) |\n| [화학 메커니즘] | OH 라디칼이 NO₂와 주로 반응 (NOx 적정) | OH 라디칼이 VOCs와 주로 반응 |\n| [NOx 삭감 시] | [오존 농도 역설적 상승] (오존 적정 소멸 저하) | [오존 농도 효과적 대폭 감소] |\n| [VOCs 삭감 시] | [오존 농도 매우 효과적 감소] | 오존 농도 감소 효과 미미 |\n| [중점 정책] | 유기용제, 도장, 인쇄소 [VOCs 집중 감축] | 발전소, 대형 연소시설 [NOx 집중 감축] |\n\n■ [차별화 결론]:\n- 도심지 오존 저감을 위해서는 NOx 단독 감축 시 발생하는 \'오존 역설 현상\'을 막기 위해 VOCs를 동시 감축하는 [통합 비례 삭감 전략]이 필수적임.',
+        memorized: false
+      },
+      {
+        id: 'c5-01',
+        type: '25p',
+        category: '5. 미기상학',
+        title: '대기안정도에 따른 6대 연기(Plume) 확산 형태 및 지표면 오염 영향 비교',
+        intro: '굴뚝 상하층의 연직 기온감률(대기안정도) 및 역전층 위치에 따른 배가스 플룸의 확산 거동 특성.',
+        body: '■ [6대 Plume 확산 형태 비교 (표)]:\n| 연기 형태 | 상층 / 하층 대기 안정도 | 거동 형태 및 지표 오염 영향 |\n| :--- | :--- | :--- |\n| [환상형 (Looping)] | 과단열 / 과단열 (강한 불안정) | 맑은 날 한낮. 강한 열적 난류로 지표 주기적 착지 고농도 |\n| [원추형 (Coning)] | 건단열 / 건단열 (중립 대기) | 흐린 날 또는 바람 부는 밤. 원뿔형 대칭 확산, 가우시안 적합 |\n| [부채형 (Fanning)] | 역전 / 역전 (강한 안정) | 맑은 날 밤 지표 복사역전. 수직 억제, 수평 부채꼴 확산 |\n| [훈연형 (Fumigation)] | 역전(상층) / 과단열(하층) | [일출 직후 지표 가열 시]. 상층 역전 뚜껑으로 [지표 최악 고농도] |\n| [소각형 (Lofting)] | 과단열(상층) / 역전(하층) | [일몰 직후 지표 냉각 시]. 상층으로만 확산, 지표 청정 (최적) |\n| [포위형 (Trapping)] | 상하층 역전 사이에 굴뚝 위치 | 굴뚝 위아래가 역전층으로 갇혀 [장시간 지표 고농도 정체] |\n\n■ [공학적 굴뚝 설계 대책]:\n- 훈연형(Fumigation) 피해를 방지하기 위해 굴뚝 유효높이를 [조기 야간 복사역전층 상부 이상]으로 설계.',
+        memorized: false
+      },
+      {
+        id: 'c5-02',
+        type: '10p',
+        category: '5. 미기상학',
+        title: 'Richardson Number(리차드슨 수, Ri)의 정의, 수식 및 대기안정도 판별',
+        intro: '대기경계층 내에서 열적 부력에 의한 난류 생성/소멸과 역학적 전단력의 상대적 비율을 나타내는 무차원수.',
+        body: '1. [수식]: [Ri = (g / T) · (dθ/dz) / (du/dz)²]\n  - g: 중력가속도, T: 절대온도, dθ/dz: 온위 연직 구배, du/dz: 풍속 연직 전단 구배\n2. [안정도 판별]:\n  - [Ri > +0.25 (임계치 Rc 초과)]: 부력 안정 상태, [난류 완전 소멸, 극도로 안정].\n  - [0 < Ri < 0.25]: 기계적 전단력으로 [난류 유지 가능].\n  - [Ri < 0]: 부력 불안정 상태, [열적 대류 난류 활발 (불안정)].',
+        memorized: false
+      },
+      {
+        id: 'c6-01',
+        type: '10p',
+        category: '6. 자동차의 오염',
+        title: '삼원촉매장치(TWC)의 정화 메커니즘 및 공연비(A/F) 제어의 중요성',
+        intro: '가솔린 엔진 배출가스 중 3대 유해물질(CO, HC, NOx)을 촉매 상에서 동시에 무해한 CO2, H2O, N2로 산화·환원 정화하는 장치.',
+        body: '1. [동시 정화 메커니즘]:\n  - 산화: [CO, HC + O₂ → CO₂ + H₂O]\n  - 환원: [NOx + CO/H₂ → N₂ + CO₂/H₂O]\n2. [이론공연비 윈도우 제어]:\n  - 촉매가 3가지 물질을 90% 이상 동시 정화하려면 [이론공연비(A/F = 14.7 ± 0.1)] 영역 내에서 산소센서 피드백 폐회로(Closed Loop) 제어가 필수적임.',
+        memorized: false
+      },
+      {
+        id: 'c7-01',
+        type: '10p',
+        category: '7. 실내공기질 오염',
+        title: '새집증후군(SHS) 및 폼알데하이드(HCHO) 방출 저감 베이크아웃(Bake-Out) 공법',
+        intro: '신축 건축자재에서 방출되는 유해물질(HCHO, VOCs)을 강제 방출시켜 실내오염도를 낮추는 열풍 건조 환기 공법.',
+        body: '1. [베이크아웃 표준 시공 절차]:\n  - 외부 창문 밀폐, 수납장 가구 문 완전 개방.\n  - 난방을 가동하여 [실내 온도를 30~35℃로 6~8시간 이상 유지]하여 자재 내 유해물질 방출 촉진.\n  - 이후 모든 창문을 열어 [2시간 이상 맞통풍 완전 환기] (3~5회 반복 수행).\n2. [공학적 효과]: HCHO 및 휘발성 유기화합물 잔류 방출량을 [40~50% 이상 조기 저감].',
+        memorized: false
+      },
+      {
+        id: 'c8-01',
+        type: '10p',
+        category: '8. 다이옥신 및 POPs',
+        title: '다이옥신(PCDDs/PCDFs)의 De Novo 합성 메커니즘 및 억제 대책',
+        intro: '소각로 후단 열교환기 및 집진기 저온 영역(250~400℃)에서 비산재 표면의 탄소분과 염소원이 촉매 반응하여 다이옥신이 재합성되는 현상.',
+        body: '1. [De Novo 합성 조건]:\n  - 온도: [250 ~ 400℃ (최대 생성 피크 300℃)].\n  - 원인: 미연 탄소분(Soot) + CuCl₂ 등 중금속 촉매 + 산소 + 염소(Cl).\n2. [공학적 억제 대책]:\n  - [급랭 시스템]: 보일러 후단 배가스를 [200℃ 이하로 2초 이내 급랭(Quenching)].\n  - 완전 연소 구현: 연소실 [온도 850℃ 이상, 체류시간 2초 이상 (2-Sec Rule)].',
+        memorized: false
+      },
+      {
+        id: 'c9-01',
+        type: '10p',
+        category: '9. 악취',
+        title: '공기희석관능법과 기기분석법의 특성 비교 및 복합악취 희석배수 산정',
+        intro: '악취방지법에 따른 인간의 후각을 이용한 관능 측정법과 특정악취물질(22종)의 정량 기기 분석법 비교.',
+        body: '1. [공기희석관능법]:\n  - 판정요원(5인 이상)이 무취공기로 희석된 악취 가스를 흡입하여 [냄새를 감지하지 못할 때까지 희석한 배수(희석배수)]로 판정.\n2. [특징 비교]:\n  - 관능법: 미지 물질의 [복합 상승 악취 및 체감 오염도 평가]에 최적.\n  - 기기분석법(GC/MS 등): 원인 물질의 정량 파악 및 방지시설 최적 설계 데이터 확보에 적합.',
+        memorized: false
+      },
+      {
+        id: 'c10-01',
+        type: '25p',
+        category: '10. VOCs 관리',
+        title: 'VOCs 및 악취 제거용 4대 소각기술(TO, CO, RTO, RCO)의 비교 및 축열연소(RTO) 핵심 설계',
+        intro: '유기용제 및 악취 함유 배가스를 고온 산화 처리하여 무해화하는 4대 연소 기술의 원리, 열회수율 및 운전 대책 비교.',
+        body: '■ [4대 VOCs 산화 처리설비 비교 (표)]:\n| 구분 | 직접연소(TO) | 촉매연소(CO) | 축열연소(RTO) | 축열촉매(RCO) |\n| :--- | :--- | :--- | :--- | :--- |\n| [산화 온도] | 750 ~ 850 ℃ | 250 ~ 350 ℃ | 750 ~ 850 ℃ | 300 ~ 400 ℃ |\n| [열교환 방식] | 금속 관형 열교환기 | 금속 판형 열교환기 | [세라믹 축열재 (Bed)] | 세라믹 축열재 + 촉매 |\n| [열회수율] | 50 ~ 70 % | 60 ~ 80 % | [95 % 이상 (초고효율)] | [95 % 이상] |\n| [보조연료] | 매우 큼 | 중간 | 극히 적음 (자연소 가능) | 최저 (극저농도 자연소) |\n| [촉매독 취약] | 무관 | [중금속, 황, Si 피독] | 무관 | [촉매 피독 주의] |\n\n■ [RTO 핵심 유지관리 대책]:\n1. [밸브 절환 누설]: 유로 전환 시 미처리 가스 배출 방지를 위한 [퍼지(Purge) 챔버 구축 및 로터리 밸브 적용].\n2. [축열재 폐쇄]: 유기물 타르 응축 차압 상승 시 [주기적 고온 베이크아웃(Bake-Out) 열풍 세정].',
+        memorized: false
+      },
+      {
+        id: 'c11-01',
+        type: '10p',
+        category: '11. 산업환기',
+        title: 'Null Point 정의 및 국소배기 후드(Hood) 설계 시 공학적 중요성',
+        intro: '작업공정에서 비산하는 오염입자의 초기 운동속도와 후드 흡인 기류속도가 상쇄되어 합성속도가 0이 되는 정체점.',
+        body: '1. [Null Point의 정의]:\n  - 오염물질의 [관성 비산속도]와 후드 흡인력에 의한 [제어풍속]이 일치하여 상대속도가 0이 되는 지점.\n2. [설계 시 중요성]:\n  - [후드 개구면 위치]: 후드 입구는 반드시 [Null Point보다 발생원에 가깝거나 후단에 위치]해야 오염물질 포집 가능.\n  - [배풍량 최적화]: 불필요한 과대 풍량을 억제하여 [송풍기 동력비 및 덕트 마모 절감].',
+        memorized: false
+      },
+      {
+        id: 'c12-01',
+        type: '25p',
+        category: '12. 입자상물질과 처리',
+        title: '여과집진장치(Bag Filter) 탈진방식 3종 비교 및 Pulse-Jet 탈진 메커니즘',
+        intro: '여과포 표면에 형성된 1차 분진층(Dust Cake)을 주기적으로 탈락시켜 연속 통기성을 확보하는 탈진 기술 비교.',
+        body: '■ [3대 여과집진 탈진 방식 비교 (표)]:\n| 구분 | 기계진동형 (Mechanical) | 역기류형 (Reverse-Air) | 펄스제트형 (Pulse-Jet) |\n| :--- | :--- | :--- | :--- |\n| [탈진 메커니즘] | 모터 기계적 흔듦 | 저압 역기류 역세척 | [0.1초 고압 압축공기 순간 분사] |\n| [여과 방식] | 내면여과 (Inside-Out) | 내면여과 (Inside-Out) | [외면여과 (Outside-In, 케이지)] |\n| [여과속도 (A/C)] | 0.5 ~ 1.0 m/min (저속) | 0.5 ~ 0.8 m/min (저속) | [1.5 ~ 3.0 m/min (고속 여과)] |\n| [운전 방식] | 간헐식 (구획 차단) | 간헐식 (다실 격실 차단) | [연속식 (Online 탈진 가능)] |\n| [설치 면적] | 대형 | 매우 대형 | [콤팩트 (소형화 가능)] |\n\n■ [Pulse-Jet 벤투리(Venturi)의 역할]:\n- 노즐에서 분사된 고압 공기(5~7kg/cm²)가 벤투리를 통과하며 [주변 2차 공기를 4~5배 동반 흡입]하여 강력한 순간 팽창 충격파로 탈진.',
+        memorized: false
+      },
+      {
+        id: 'c12-02',
+        type: '25p',
+        category: '12. 입자상물질과 처리',
+        title: '전기집진장치(EP) 비저항(Resistivity) 이상현상(역전리, 재비산) 및 Deutsch 효율식',
+        intro: '정전기력을 이용한 집진원리와 분진의 고유 비저항에 따른 한계 현상 및 공학적 대책 고찰.',
+        body: '■ [Deutsch-Anderson 집진효율 수식]:\n- [효율 η = 1 - exp(-A · ω / Q) = 1 - exp(-SCA · ω)]\n  - A: 집진면적 (m²), Q: 가스유량 (m³/s), SCA: 비집진면적, ω: 입자 분리 이동속도 (m/s)\n\n■ [분진 비저항(Rd)에 따른 이상현상 및 대책 (표)]:\n| 구분 | 저비저항 분진 (Rd < 10⁴ Ω·cm) | 정상 비저항 (10⁴ ~ 10¹⁰ Ω·cm) | 고비저항 분진 (Rd > 10¹⁰ Ω·cm) |\n| :--- | :--- | :--- | :--- |\n| [발생 현상] | [재비산 (Jumping 현상)] | 안정적인 정상 집진 | [역전리 (Back Corona)] |\n| [메커니즘] | 포집 즉시 전하 상실 반발 비산 | 적절한 전기력으로 부착 유지 | 분진층 절연파괴 양이온 방출 하전 무력화 |\n| [공학 대책] | 유속 저하, 집진극 형상 개선 | 정상 운전 유지 | [가스 조질(수분·SO₃ 주입)], 펄스 하전 |\n\n■ [차별화 결론]:\n- 후단에 습식 전기집진기(Wet-EP)를 연계하면 비저항의 영향을 완전 배제하고 응축성 미세먼지(CPM)까지 99% 이상 제거 가능.',
+        memorized: false
+      },
+      {
+        id: 'c13-01',
+        type: '25p',
+        category: '13. 유해가스와 처리',
+        title: '선택적 촉매환원(SCR) 핵심 6대 설계인자 및 ABS(산성황산암모늄) 생성 제어',
+        intro: '배가스 중 NOx를 암모니아와 촉매 상에서 N2와 H2O로 환원시키는 고효율 탈질 공정의 핵심 설계 지배인자.',
+        body: '■ [SCR 핵심 6대 설계인자 분석]:\n1. [촉매]: 주촉매 V₂O₅, 담체 TiO₂, 조촉매 WO₃ 적용.\n2. [반응 온도]: 최적 [300 ~ 400℃]. 저온 시 ABS 피독, 고온(>450℃) 시 촉매 소결 및 NH₃ 산화 NOx 역생성.\n3. [반응당량비(NH₃/NOx)]: 설계치 [0.8 ~ 1.05]. 1.0 초과 시 NH₃ 슬립 발생.\n4. [공간속도(SV)]: [2,000 ~ 5,000 hr⁻¹]. 과대 시 체류시간 부족으로 탈질효율 저하.\n5. [SOx 농도]: SO₂ → SO₃ 산화율을 [1% 이하]로 엄격 억제.\n6. [분진 부하]: 고분진 조건 시 마모 및 기공 폐쇄 방지용 수트블로워 설치.\n\n■ [ABS 석출 제어 대책 (표)]:\n| 구분 | ABS 형성 반응 | 저감 관리 기준 |\n| :--- | :--- | :--- |\n| [반응식] | NH₃ + SO₃ + H₂O → NH₄HSO₄ (점착성 고체) | [운전온도를 ABS 석출온도(>280℃) 이상 유지] |\n| [제어 목표] | 촉매 표면 및 공기예열기 튜브 폐쇄 부식 | [NH₃ Slip을 2~5 ppm 이하]로 정밀 제어 |',
+        memorized: false
+      },
+      {
+        id: 'c14-01',
+        type: '10p',
+        category: '14. 공정시험기준',
+        title: '응축성 미세먼지(CPM, Condensable PM)의 정의, 측정방법(EPA Method 202) 및 관리 필요성',
+        intro: '굴뚝 배출 가스 온도에서는 기체 상태이나 대기 배출 후 냉각·희석에 의해 응축되어 입자화되는 초미세먼지.',
+        body: '1. [CPM의 정의]:\n  - 굴뚝 내 배가스 온도(>120℃)에서는 가스상이나 상온 대기 배출 즉시 [상변화(응축·핵생성)를 통해 PM2.5로 전환]되는 물질.\n2. [측정 메커니즘 (EPA Method 202 / 국내 공정시험기준)]:\n  - 전단에서 여과포로 여과성 먼지(FPM) 채취 후, 후단 [응축 임핀저 트레인(Dry Impinger)을 거쳐 30℃ 이하로 냉각 응축]시켜 유기성/무기성 성분 포집·분석.\n3. [시사 관리 필요성]:\n  - 총 미세먼지 배출량의 상당 비중을 차지하므로 굴뚝 TMS 기반 총먼지 관리의 핵심 규제 항목으로 부각됨.',
+        memorized: false
+      },
+      {
+        id: 'c15-01',
+        type: '10p',
+        category: '15. 대기환경관계법규',
+        title: '미세먼지 계절관리제(12월~3월)의 법적 근거, 시행 목적 및 4대 핵심 감축 시책',
+        intro: '고농도 미세먼지 발생 빈도가 높은 겨울~초봄 기간에 평상시보다 강화된 저감 조치를 시행하는 특별 종합 대책.',
+        body: '1. [법적 근거 및 목적]:\n  - [미세먼지 저감 및 관리에 관한 특별법]. 기상 악화(대기정체)에 따른 고농도 발생을 선제적으로 예방.\n2. [4대 핵심 감축 시책]:\n  - [산업 부문]: 대형 사업장(1~3종) 자발적 감축 협약 및 불법 배출 드론·이동측정차량 특별 점검.\n  - [발전 부문]: 석탄화력발전소 가동 정지(상한제약 80%) 및 출력 제한.\n  - [수송 부문]: 배출가스 5등급 차량 수도권 및 대도시 운행 제한.\n  - [생활 부문]: 영농폐기물 불법소각 집중 단속 및 도로청소차 집중 운행.',
+        memorized: false
+      },
+      {
+        id: 'c15-02',
+        type: '10p',
+        category: '15. 대기환경관계법규',
+        title: '대기환경보전법상 4대 주요 용어 정의 (대기오염물질, 감시물질, 특정대기유해물질, VOCs)',
+        intro: '대기환경보전법 제2조에 명시된 오염물질의 유해도 및 거동 특성에 따른 법적 분류 체계.',
+        body: '1. [대기오염물질]: 대기오염의 원인이 되는 가스·입자상물질로서 [환경부령으로 정하는 64종].\n2. [유해성대기감시물질]: 인체 건강이나 동식물 생육에 위해 우려가 있어 [지속적인 측정·감시가 필요한 43종].\n3. [특정대기유해물질]: 저농도에서도 [암이나 중대 질환을 유발할 수 있어 엄격 관리가 필요한 35종 (벤젠, 다이옥신 등)].\n4. [휘발성유기화합물(VOCs)]: 탄화수소화합물 중 [대기 중 광화학반응을 일으켜 오존 등을 생성하는 37종 물질].',
+        memorized: false
+      }
+    ];
+
+    var currentDB = [];
+    try {
+      var saved = localStorage.getItem('pe_air_master_v3');
+      currentDB = saved ? JSON.parse(saved) : masterExamDB;
+    } catch(e) {
+      currentDB = masterExamDB;
+    }
+
+    var isBlind = false;
+    var activeCategory = 'ALL';
+
+    function checkPin() {
+      var pin = document.getElementById('pin-input').value.replace(/\s+/g, '');
+      if (pin === '8234') {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('main-app').classList.remove('hidden');
+        document.getElementById('login-err').classList.add('hidden');
+        initApp();
+      } else {
+        document.getElementById('login-err').classList.remove('hidden');
+      }
+    }
+
+    document.getElementById('pin-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') checkPin();
+    });
+
+    function logout() {
+      document.getElementById('pin-input').value = '';
+      document.getElementById('login-err').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('main-app').classList.add('hidden');
+    }
+
+    function initApp() {
+      renderBadges();
+      renderItems();
+      updateProgress();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function saveDB() {
+      try {
+        localStorage.setItem('pe_air_master_v3', JSON.stringify(currentDB));
+      } catch(e) {}
+      renderBadges();
+      renderItems();
+      updateProgress();
+    }
+
+    function renderBadges() {
+      var count10 = currentDB.filter(function(x) { return x.type === '10p'; }).length;
+      var count25 = currentDB.filter(function(x) { return x.type === '25p'; }).length;
+      document.getElementById('badge-10p').innerText = count10;
+      document.getElementById('badge-25p').innerText = count25;
+    }
+
+    function formatBodyText(text) {
+      if (!text) return '';
+      var lines = text.split('\n');
+      var html = '';
+      var inTable = false;
+      var tableHtml = '';
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (line.startsWith('|') && line.endsWith('|')) {
+          if (!inTable) {
+            inTable = true;
+            tableHtml = '<div class="overflow-x-auto my-3"><table class="w-full text-left text-xs border border-slate-800 rounded-lg overflow-hidden">';
+          }
+          var cells = line.split('|').filter(function(c, idx, arr) { return idx > 0 && idx < arr.length - 1; });
+          if (line.indexOf('---') !== -1 || line.indexOf(':---') !== -1) continue;
+          
+          var isHeader = (tableHtml.indexOf('<tbody>') === -1);
+          if (isHeader) {
+            tableHtml += '<thead class="bg-slate-950 text-slate-300 font-bold"><tr>';
+            cells.forEach(function(cell) { tableHtml += '<th class="p-2.5 border-b border-slate-800">' + parseBlind(cell.trim()) + '</th>'; });
+            tableHtml += '</tr></thead><tbody>';
+          } else {
+            tableHtml += '<tr class="border-b border-slate-800/60 hover:bg-slate-800/30">';
+            cells.forEach(function(cell) { tableHtml += '<td class="p-2.5 text-slate-300">' + parseBlind(cell.trim()) + '</td>'; });
+            tableHtml += '</tr>';
+          }
+        } else {
+          if (inTable) {
+            inTable = false;
+            tableHtml += '</tbody></table></div>';
+            html += tableHtml;
+            tableHtml = '';
+          }
+          if (line.length > 0) {
+            html += '<p class="mb-1.5 leading-relaxed">' + parseBlind(line) + '</p>';
+          }
+        }
+      }
+      if (inTable) {
+        tableHtml += '</tbody></table></div>';
+        html += tableHtml;
+      }
+      return html;
+    }
+
+    function parseBlind(str) {
+      return str.replace(/\[(.*?)\]/g, function(match, p1) {
+        return '<span class="blind-target font-semibold text-amber-300 underline decoration-amber-500/40 ' + (isBlind ? 'blind-blur' : '') + '" onclick="toggleWord(this)">' + p1 + '</span>';
+      });
+    }
+
+    function toggleWord(el) {
+      if (isBlind) el.classList.toggle('revealed');
+    }
+
+    function toggleBlindMode() {
+      isBlind = !isBlind;
+      var targets = document.querySelectorAll('.blind-target');
+      targets.forEach(function(el) {
+        if (isBlind) {
+          el.classList.add('blind-blur');
+          el.classList.remove('revealed');
+        } else {
+          el.classList.remove('blind-blur', 'revealed');
+        }
+      });
+      var btn = document.getElementById('blind-btn');
+      btn.classList.toggle('bg-blue-600', isBlind);
+      btn.classList.toggle('border-blue-500', isBlind);
+    }
+
+    function toggleMemorized(id) {
+      var item = currentDB.find(function(x) { return x.id === id; });
+      if (item) {
+        item.memorized = !item.memorized;
+        saveDB();
+      }
+    }
+
+    function deleteItem(id) {
+      if (confirm('이 문항을 삭제하시겠습니까?')) {
+        currentDB = currentDB.filter(function(x) { return x.id !== id; });
+        saveDB();
+      }
+    }
+
+    function handleCategoryFilter(cat) {
+      activeCategory = cat;
+      renderItems(document.getElementById('search-input').value);
+    }
+
+    function renderItems(filterQuery) {
+      var query = (filterQuery || '').toLowerCase();
+      var list10 = document.getElementById('list-10p');
+      var list25 = document.getElementById('list-25p');
+      list10.innerHTML = '';
+      list25.innerHTML = '';
+
+      var filtered = currentDB.filter(function(item) {
+        var matchCat = (activeCategory === 'ALL' || item.category === activeCategory);
+        var matchQuery = (item.title && item.title.toLowerCase().indexOf(query) !== -1) || 
+                         (item.category && item.category.toLowerCase().indexOf(query) !== -1) || 
+                         (item.body && item.body.toLowerCase().indexOf(query) !== -1);
+        return matchCat && matchQuery;
+      });
+
+      filtered.forEach(function(item) {
+        var card = document.createElement('article');
+        card.className = 'bg-slate-900 border ' + (item.memorized ? 'border-emerald-500/40 bg-slate-900/60' : 'border-slate-800') + ' rounded-2xl p-5 hover:border-slate-700 transition space-y-3';
+        
+        card.innerHTML = 
+          '<div class="flex items-center justify-between">' +
+            '<div class="flex items-center gap-2">' +
+              '<span class="px-2.5 py-1 text-[11px] font-bold rounded-lg border bg-blue-500/10 text-blue-400 border-blue-500/20">' + item.category + '</span>' +
+              (item.memorized ? '<span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">암기완료</span>' : '') +
+            '</div>' +
+            '<div class="flex items-center gap-1.5">' +
+              '<button type="button" onclick="loadToTrainer(\'' + item.id + '\')" title="인출 훈련으로 이동" class="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800 transition">' +
+                '<i data-lucide="pen-tool" class="w-4 h-4"></i>' +
+              '</button>' +
+              '<button type="button" onclick="toggleMemorized(\'' + item.id + '\')" title="암기 체크" class="p-1.5 rounded-lg ' + (item.memorized ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-500 hover:text-slate-300') + ' transition">' +
+                '<i data-lucide="' + (item.memorized ? 'check-circle-2' : 'circle') + '" class="w-4 h-4"></i>' +
+              '</button>' +
+              '<button type="button" onclick="deleteItem(\'' + item.id + '\')" class="p-1.5 text-slate-600 hover:text-rose-400 transition">' +
+                '<i data-lucide="trash-2" class="w-3.5 h-3.5"></i>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+          '<h3 class="text-sm md:text-base font-bold text-white leading-snug">' + item.title + '</h3>' +
+          '<div class="text-xs space-y-2.5 text-slate-300 font-mono leading-relaxed">' +
+            (item.intro ? 
+              '<div class="p-3 bg-slate-950/80 rounded-xl border border-slate-800/80">' +
+                '<p class="text-slate-400 font-semibold mb-1 text-[11px]">[개조식 서론 정의]</p>' +
+                '<p class="text-slate-200">' + parseBlind(item.intro) + '</p>' +
+              '</div>' : '') +
+            '<div class="p-3 bg-slate-950/40 rounded-xl border border-slate-800/40 space-y-1">' +
+              '<p class="text-slate-400 font-semibold mb-1.5 text-[11px]">[핵심 본론 및 차별화 결론]</p>' +
+              formatBodyText(item.body) +
+            '</div>' +
+          '</div>';
+
+        if (item.type === '10p') {
+          list10.appendChild(card);
+        } else {
+          list25.appendChild(card);
+        }
+      });
+
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function handleSearch(val) { renderItems(val); }
+
+    function updateProgress() {
+      if (currentDB.length === 0) return;
+      var count = currentDB.filter(function(x) { return x.memorized; }).length;
+      var pct = Math.round((count / currentDB.length) * 100);
+      document.getElementById('progress-percent').innerText = pct + '%';
+      document.getElementById('progress-bar').style.width = pct + '%';
+      document.getElementById('memo-count').innerText = count + ' / ' + currentDB.length + ' 문항 완료';
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.add('hidden'); });
+      document.querySelectorAll('.tab-btn').forEach(function(el) {
+        el.classList.remove('text-blue-400', 'bg-blue-600/10', 'border', 'border-blue-500/20');
+        el.classList.add('text-slate-400');
+      });
+
+      document.getElementById(tabId).classList.remove('hidden');
+      var activeBtn = document.getElementById('btn-' + tabId);
+      activeBtn.classList.add('text-blue-400', 'bg-blue-600/10', 'border', 'border-blue-500/20');
+      activeBtn.classList.remove('text-slate-400');
+
+      var titleMap = {
+        'tab-10p': '10점 단답형 DB',
+        'tab-25p': '25점 논술형 DB',
+        'tab-practice': '실전 답안 인출 훈련'
+      };
+      document.getElementById('tab-title').innerText = titleMap[tabId];
+    }
+
+    function openModal() { document.getElementById('item-modal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('item-modal').classList.add('hidden'); }
+
+    function saveNewItem() {
+      var title = document.getElementById('modal-title').value.trim();
+      if (!title) { alert('제목을 입력하세요'); return; }
+
+      var newItem = {
+        id: 'item-' + Date.now(),
+        type: document.getElementById('modal-type').value,
+        category: document.getElementById('modal-category').value,
+        title: title,
+        intro: document.getElementById('modal-intro').value.trim(),
+        body: document.getElementById('modal-body').value.trim(),
+        memorized: false
+      };
+      currentDB.unshift(newItem);
+      saveDB();
+      closeModal();
+      document.getElementById('modal-title').value = '';
+      document.getElementById('modal-intro').value = '';
+      document.getElementById('modal-body').value = '';
+    }
+
+    var activeTrainingItem = null;
+
+    function loadRandomQuestion() {
+      var rand = currentDB[Math.floor(Math.random() * currentDB.length)];
+      setupTrainer(rand);
+    }
+
+    function loadToTrainer(id) {
+      var item = currentDB.find(function(x) { return x.id === id; });
+      if (item) {
+        switchTab('tab-practice');
+        setupTrainer(item);
+      }
+    }
+
+    function setupTrainer(item) {
+      activeTrainingItem = item;
+      document.getElementById('train-q-title').innerText = item.title;
+      document.getElementById('train-q-type').innerText = item.category;
+      document.getElementById('user-practice-input').value = '';
+      document.getElementById('model-answer-box').innerHTML = 
+        '<div class="text-slate-500 flex flex-col items-center justify-center h-48 space-y-2">' +
+          '<i data-lucide="lock" class="w-6 h-6 text-slate-600"></i>' +
+          '<span>답안을 작성하신 후 채점 버튼을 누르면 모범답안과 키워드 적중률이 표시됩니다.</span>' +
+        '</div>';
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function compareAnswer() {
+      if (!activeTrainingItem) {
+        alert('먼저 상단의 [랜덤 출제]를 눌러 문제를 선택하세요.');
+        return;
+      }
+      var userText = document.getElementById('user-practice-input').value.trim();
+      var box = document.getElementById('model-answer-box');
+
+      var targetKeywords = [];
+      var regex = /\[(.*?)\]/g;
+      var match;
+      var fullText = (activeTrainingItem.intro || '') + ' ' + (activeTrainingItem.body || '');
+      while ((match = regex.exec(fullText)) !== null) {
+        targetKeywords.push(match[1]);
+      }
+
+      var hitCount = 0;
+      targetKeywords.forEach(function(kw) {
+        var cleanKw = kw.replace(/[^a-zA-Z0-9가-힣]/g, '');
+        if (cleanKw.length > 1 && userText.indexOf(cleanKw) !== -1) {
+          hitCount++;
+        }
+      });
+
+      var scorePct = targetKeywords.length > 0 ? Math.round((hitCount / targetKeywords.length) * 100) : 100;
+
+      box.innerHTML = 
+        '<div class="mb-3 p-3 bg-blue-950/40 border border-blue-800/40 rounded-xl">' +
+          '<div class="flex items-center justify-between mb-1">' +
+            '<span class="font-bold text-blue-400">📊 핵심 키워드 적중률</span>' +
+            '<span class="text-sm font-bold ' + (scorePct >= 70 ? 'text-emerald-400' : 'text-amber-400') + '">' + scorePct + '% (' + hitCount + '/' + targetKeywords.length + '개)</span>' +
+          '</div>' +
+          '<p class="text-[11px] text-slate-400">실전 답안 누락 방지를 위해 아래 표준 모범답안과 키워드를 대조하세요.</p>' +
+        '</div>' +
+        '<div class="space-y-2 text-xs">' +
+          (activeTrainingItem.intro ? 
+            '<div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800">' +
+              '<span class="text-slate-400 font-bold block mb-1">[개조식 서론]</span>' +
+              '<p class="text-slate-200">' + activeTrainingItem.intro + '</p>' +
+            '</div>' : '') +
+          '<div class="p-2.5 bg-slate-900 rounded-lg border border-slate-800">' +
+            '<span class="text-slate-400 font-bold block mb-1">[본론 및 결론 모범답안]</span>' +
+            formatBodyText(activeTrainingItem.body) +
+          '</div>' +
+        '</div>';
+      
+      if (window.lucide) lucide.createIcons();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.lucide) lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
